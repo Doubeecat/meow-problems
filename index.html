@@ -347,6 +347,10 @@
             border-radius: 0 var(--border-radius) var(--border-radius) 0;
         }
         
+        .question-card.non-choice {
+            border-left-color: var(--secondary);
+        }
+        
         .question-header {
             display: flex;
             justify-content: space-between;
@@ -499,6 +503,110 @@
         .mastery-control input[type="checkbox"] {
             margin-right: 10px;
             transform: scale(1.3);
+        }
+        
+        .answer-area {
+            margin-top: 15px;
+        }
+        
+        .answer-area label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: var(--dark);
+        }
+        
+        .answer-area textarea {
+            width: 100%;
+            min-height: 150px;
+            padding: 15px;
+            border: 2px solid var(--light-gray);
+            border-radius: var(--border-radius);
+            resize: vertical;
+            font-family: inherit;
+            font-size: 0.95rem;
+            line-height: 1.6;
+            transition: var(--transition);
+        }
+        
+        .answer-area textarea:focus {
+            outline: none;
+            border-color: var(--primary);
+            background: white;
+        }
+        
+        .reference-answer {
+            margin-top: 15px;
+            padding: 15px;
+            background: rgba(75, 181, 67, 0.1);
+            border-left: 5px solid var(--success);
+            border-radius: var(--border-radius);
+            display: none;
+        }
+        
+        .reference-answer h4 {
+            color: var(--success);
+            margin-bottom: 10px;
+            font-size: 1rem;
+        }
+        
+        .reference-answer-content {
+            color: var(--dark);
+            line-height: 1.8;
+            white-space: pre-wrap;
+        }
+        
+        .show-answer-btn {
+            margin-top: 10px;
+        }
+        
+        .question-type-tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            padding: 10px;
+            background: var(--light);
+            border-radius: var(--border-radius);
+        }
+        
+        .tab-btn {
+            flex: 1;
+            padding: 12px;
+            border: 2px solid var(--light-gray);
+            border-radius: var(--border-radius);
+            background: white;
+            cursor: pointer;
+            transition: var(--transition);
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        
+        .tab-btn:hover {
+            border-color: var(--accent);
+        }
+        
+        .tab-btn.active {
+            border-color: var(--primary);
+            background: var(--primary);
+            color: white;
+        }
+        
+        .tab-btn i {
+            font-size: 1.1rem;
+        }
+        
+        .tab-count {
+            background: rgba(255, 255, 255, 0.3);
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 0.85rem;
+        }
+        
+        .tab-btn.active .tab-count {
+            background: rgba(255, 255, 255, 0.3);
         }
         
         .score-display {
@@ -1157,8 +1265,21 @@
                 <h2 id="quizModeTitle">刷题模式</h2>
             </div>
             
+            <div class="question-type-tabs" id="questionTypeTabs">
+                <button class="tab-btn active" id="choiceTab" onclick="switchQuestionType('choice')">
+                    <i class="fas fa-list-ul"></i>
+                    <span>选择题</span>
+                    <span class="tab-count" id="choiceCount">0</span>
+                </button>
+                <button class="tab-btn" id="nonChoiceTab" onclick="switchQuestionType('nonChoice')">
+                    <i class="fas fa-pen"></i>
+                    <span>非选择题</span>
+                    <span class="tab-count" id="nonChoiceCount">0</span>
+                </button>
+            </div>
+            
             <div class="quiz-header">
-                <h3>机器学习知识测试</h3>
+                <h3 id="currentTypeTitle">选择题部分</h3>
                 <div class="quiz-stats">
                     <div class="stat-item">
                         <i class="fas fa-clock"></i>
@@ -1306,6 +1427,26 @@
     <script>
         // 示例数据（包含单选和多选）
         const sampleQuestions = {
+            "nonChoiceQuestions": [
+                {
+                    "topic": "ROC曲线",
+                    "score": 10,
+                    "question": "请详细解释ROC曲线的含义，并说明如何使用ROC曲线评估分类模型的性能。在什么情况下AUC值会接近1？",
+                    "answer": "ROC曲线（Receiver Operating Characteristic Curve，受试者工作特征曲线）是一种用于评估二分类模型性能的重要工具。\n\n1. ROC曲线的含义：\n   - 横轴：假正率（FPR，False Positive Rate），即实际为负类但被预测为正类的样本比例\n   - 纵轴：真正率（TPR，True Positive Rate，也称为召回率），即实际为正类且被正确预测的样本比例\n   - 曲线绘制：通过改变分类阈值，得到不同的(FPR, TPR)点，连接这些点形成ROC曲线\n\n2. 性能评估：\n   - AUC（Area Under Curve）：ROC曲线下的面积，范围在[0,1]之间\n   - AUC = 0.5：模型性能等同于随机猜测\n   - AUC > 0.5：模型有预测能力\n   - AUC = 1：完美分类器\n\n3. AUC接近1的情况：\n   - 当模型能够在所有阈值下都保持高TPR和低FPR时\n   - 模型对正负样本的区分能力很强\n   - 正负样本的预测分数分布分离度高"
+                },
+                {
+                    "topic": "支持向量机 (SVM)",
+                    "score": 12,
+                    "question": "解释SVM中核函数的作用，并列举至少三种常用的核函数。为什么在处理非线性可分数据时需要使用核函数？",
+                    "answer": "核函数在SVM中的作用和常用类型：\n\n1. 核函数的作用：\n   - 将低维空间中的非线性问题映射到高维空间，使其变成线性可分问题\n   - 通过核技巧（Kernel Trick），避免显式地进行高维空间的计算\n   - 只需计算核函数值K(x_i, x_j)，而不需要知道具体的映射函数φ(x)\n\n2. 常用核函数：\n   - 线性核：K(x, y) = x^T · y\n     适用于线性可分数据，计算简单快速\n   \n   - 多项式核：K(x, y) = (γx^T·y + r)^d\n     可以处理非线性问题，d为多项式次数\n   \n   - 径向基函数核（RBF/高斯核）：K(x, y) = exp(-γ||x-y||²)\n     最常用，适用于各种非线性问题\n   \n   - Sigmoid核：K(x, y) = tanh(γx^T·y + r)\n     模拟神经网络的激活函数\n\n3. 为什么需要核函数处理非线性数据：\n   - 在原始空间中，数据可能不是线性可分的\n   - 通过核函数隐式地将数据映射到高维特征空间\n   - 在高维空间中，原本非线性可分的数据往往变成线性可分\n   - 例如：二维平面上的同心圆数据，映射到三维空间后可以用平面分隔"
+                },
+                {
+                    "topic": "神经网络 (Neural Network)",
+                    "score": 15,
+                    "question": "描述反向传播算法的基本原理和计算步骤。为什么需要使用链式法则？并解释梯度消失和梯度爆炸问题及其解决方法。",
+                    "answer": "反向传播算法详解：\n\n1. 基本原理：\n   - 反向传播是训练神经网络的核心算法\n   - 通过计算损失函数对每个权重的梯度，来更新网络参数\n   - 从输出层开始，逆向传播误差信号到输入层\n\n2. 计算步骤：\n   a) 前向传播：计算每层的激活值和最终输出\n   b) 计算输出层误差：δ^L = ∇_a C ⊙ σ'(z^L)\n   c) 反向传播误差：δ^l = ((w^{l+1})^T δ^{l+1}) ⊙ σ'(z^l)\n   d) 计算梯度：∂C/∂w^l = a^{l-1} δ^l, ∂C/∂b^l = δ^l\n   e) 更新参数：w := w - η∂C/∂w\n\n3. 链式法则的必要性：\n   - 神经网络是多层复合函数\n   - 需要求损失函数对任意层参数的偏导\n   - 链式法则：∂C/∂w^l = ∂C/∂a^L · ∂a^L/∂a^{L-1} · ... · ∂a^{l+1}/∂w^l\n   - 允许误差从后向前逐层传播\n\n4. 梯度消失问题：\n   - 原因：在深层网络中，梯度在反向传播时逐层相乘，可能趋近于0\n   - 影响：浅层网络参数几乎不更新，学习停滞\n   - 解决方法：\n     * 使用ReLU等激活函数（梯度不会衰减）\n     * 批归一化（Batch Normalization）\n     * 残差连接（ResNet）\n     * 使用LSTM/GRU（在RNN中）\n\n5. 梯度爆炸问题：\n   - 原因：梯度在反向传播时指数级增长\n   - 影响：参数更新步长过大，导致发散\n   - 解决方法：\n     * 梯度裁剪（Gradient Clipping）\n     * 权重正则化\n     * 使用较小的学习率\n     * 批归一化"
+                }
+            ],
             "choiceQuestions": [
                 {
                     "topic": "CNN相关 - 卷积层作用",
@@ -1388,8 +1529,11 @@
 
         // 全局变量
         let allQuestions = [];
+        let allNonChoiceQuestions = [];
         let currentQuestions = [];
+        let currentNonChoiceQuestions = [];
         let userAnswers = [];
+        let userNonChoiceAnswers = [];
         let currentQuestionIndex = 0;
         let quizStarted = false;
         let startTime;
@@ -1398,6 +1542,7 @@
         let masteredQuestions = new Set();
         let reviewMode = 'normal';
         let wrongQuestionsDB = {}; // 错题数据库: { questionId: { question, wrongCount, lastWrongDate, wrongDates: [] } }
+        let currentQuestionType = 'choice'; // 'choice' 或 'nonChoice'
 
         // 初始化
         function init() {
@@ -1519,35 +1664,59 @@
                     return false;
                 }
                 
+                // 加载选择题
                 allQuestions = questions.choiceQuestions || [];
                 
-                if (allQuestions.length === 0) {
-                    showToast('未找到选择题数据', 'error');
+                // 加载非选择题
+                allNonChoiceQuestions = questions.nonChoiceQuestions || [];
+                
+                if (allQuestions.length === 0 && allNonChoiceQuestions.length === 0) {
+                    showToast('未找到题目数据', 'error');
                     return false;
                 }
                 
-                // 标准化题目格式
+                // 标准化选择题格式
                 allQuestions = allQuestions.map((q, index) => {
                     if (!q.type) {
                         q.type = Array.isArray(q.correctAnswer) ? 'multiple' : 'single';
                     }
                     if (!q.id) {
-                        q.id = `q_${Date.now()}_${index}`;
+                        q.id = `choice_${Date.now()}_${index}`;
                     }
+                    return q;
+                });
+                
+                // 标准化非选择题格式
+                allNonChoiceQuestions = allNonChoiceQuestions.map((q, index) => {
+                    if (!q.id) {
+                        q.id = `nonchoice_${Date.now()}_${index}`;
+                    }
+                    q.type = 'nonChoice';
                     return q;
                 });
                 
                 reviewMode = mode;
                 currentQuestions = [...allQuestions];
+                currentNonChoiceQuestions = [...allNonChoiceQuestions];
                 userAnswers = new Array(currentQuestions.length).fill(null);
+                userNonChoiceAnswers = new Array(currentNonChoiceQuestions.length).fill('');
                 
+                // 更新题型标签计数
+                document.getElementById('choiceCount').textContent = currentQuestions.length;
+                document.getElementById('nonChoiceCount').textContent = currentNonChoiceQuestions.length;
+                
+                // 默认显示选择题
+                currentQuestionType = 'choice';
                 displayQuestions();
+                
                 document.getElementById('quizInterface').style.display = 'block';
                 document.getElementById('quizModeTitle').textContent = 
                     mode === 'review' ? '复习模式' : '刷题模式';
                 
                 startQuiz();
-                showToast(`已加载 ${currentQuestions.length} 道选择题`);
+                
+                const totalCount = currentQuestions.length + currentNonChoiceQuestions.length;
+                showToast(`已加载 ${totalCount} 道题目 (选择题${currentQuestions.length}道 + 非选择题${currentNonChoiceQuestions.length}道)`);
                 
                 // 滚动到刷题界面
                 setTimeout(() => {
@@ -1564,13 +1733,70 @@
 
         // 验证题目格式
         function validateQuestions(questions) {
-            return questions && questions.choiceQuestions && Array.isArray(questions.choiceQuestions);
+            // 至少要有选择题或非选择题其中一种
+            return questions && (
+                (questions.choiceQuestions && Array.isArray(questions.choiceQuestions)) ||
+                (questions.nonChoiceQuestions && Array.isArray(questions.nonChoiceQuestions))
+            );
         }
 
         // 显示题目
         function displayQuestions() {
             const container = document.getElementById('questionList');
             container.innerHTML = '';
+            
+            // 控制标签页的显示
+            const choiceTab = document.getElementById('choiceTab');
+            const nonChoiceTab = document.getElementById('nonChoiceTab');
+            const tabsContainer = document.getElementById('questionTypeTabs');
+            
+            if (currentQuestions.length === 0 && currentNonChoiceQuestions.length === 0) {
+                tabsContainer.style.display = 'none';
+                container.innerHTML = '<div class="empty-state"><i class="fas fa-inbox"></i><h3>没有题目</h3></div>';
+                return;
+            }
+            
+            // 显示标签页容器
+            tabsContainer.style.display = 'flex';
+            
+            // 控制各标签的显示
+            if (currentQuestions.length === 0) {
+                choiceTab.style.display = 'none';
+                if (currentQuestionType === 'choice') {
+                    currentQuestionType = 'nonChoice';
+                    nonChoiceTab.classList.add('active');
+                }
+            } else {
+                choiceTab.style.display = 'flex';
+            }
+            
+            if (currentNonChoiceQuestions.length === 0) {
+                nonChoiceTab.style.display = 'none';
+                if (currentQuestionType === 'nonChoice') {
+                    currentQuestionType = 'choice';
+                    choiceTab.classList.add('active');
+                }
+            } else {
+                nonChoiceTab.style.display = 'flex';
+            }
+            
+            if (currentQuestionType === 'choice') {
+                displayChoiceQuestions(container);
+            } else {
+                displayNonChoiceQuestions(container);
+            }
+            
+            updateProgress();
+            updateNavigation();
+            updateQuestionCounter();
+        }
+        
+        // 显示选择题
+        function displayChoiceQuestions(container) {
+            if (currentQuestions.length === 0) {
+                container.innerHTML = '<div class="empty-state"><i class="fas fa-inbox"></i><h3>没有选择题</h3></div>';
+                return;
+            }
             
             currentQuestions.forEach((q, index) => {
                 const isMultiple = q.type === 'multiple' || Array.isArray(q.correctAnswer);
@@ -1626,10 +1852,62 @@
                     </div>
                 `;
             });
+        }
+        
+        // 显示非选择题
+        function displayNonChoiceQuestions(container) {
+            if (currentNonChoiceQuestions.length === 0) {
+                container.innerHTML = '<div class="empty-state"><i class="fas fa-inbox"></i><h3>没有非选择题</h3></div>';
+                return;
+            }
             
-            updateProgress();
-            updateNavigation();
-            updateQuestionCounter();
+            currentNonChoiceQuestions.forEach((q, index) => {
+                const isMastered = masteredQuestions.has(q.id);
+                const masteredBadge = isMastered ? '<span class="mastery-badge"><i class="fas fa-check"></i> 已掌握</span>' : '';
+                
+                const masteryControl = reviewMode === 'review' ? `
+                    <div class="mastery-control">
+                        <label>
+                            <input type="checkbox" onchange="toggleMastery('${q.id}', this.checked)" 
+                                   ${isMastered ? 'checked' : ''}>
+                            <span>标记为已掌握</span>
+                        </label>
+                    </div>
+                ` : '';
+                
+                container.innerHTML += `
+                    <div class="question-card non-choice ${index === 0 ? 'active' : ''}" id="nonChoiceQuestion${index}" 
+                         ${index === 0 ? '' : 'style="display: none;"'}>
+                        <div class="question-header">
+                            <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                                <div class="question-topic">${q.topic}</div>
+                                <div class="question-type">简答题</div>
+                                <div class="question-score">${q.score}分</div>
+                                ${masteredBadge}
+                            </div>
+                        </div>
+                        <div class="question-text">${index + 1}. ${q.question}</div>
+                        
+                        <div class="answer-area">
+                            <label>你的答案：</label>
+                            <textarea id="nonChoiceAnswer${index}" 
+                                      placeholder="请在此输入你的答案..."
+                                      oninput="saveNonChoiceAnswer(${index}, this.value)">${userNonChoiceAnswers[index] || ''}</textarea>
+                        </div>
+                        
+                        <button class="btn btn-secondary show-answer-btn" onclick="toggleReferenceAnswer(${index})">
+                            <i class="fas fa-eye"></i> 查看参考答案
+                        </button>
+                        
+                        <div class="reference-answer" id="refAnswer${index}">
+                            <h4><i class="fas fa-lightbulb"></i> 参考答案</h4>
+                            <div class="reference-answer-content">${q.answer}</div>
+                        </div>
+                        
+                        ${masteryControl}
+                    </div>
+                `;
+            });
         }
 
         // 格式化正确答案显示
@@ -1760,39 +2038,96 @@
 
         // 更新进度条
         function updateProgress() {
-            const answeredCount = userAnswers.filter(answer => answer !== null).length;
-            const progress = (answeredCount / currentQuestions.length) * 100;
+            let answeredCount = 0;
+            let totalCount = 0;
+            
+            // 计算选择题进度
+            if (currentQuestions.length > 0) {
+                answeredCount += userAnswers.filter(answer => answer !== null).length;
+                totalCount += currentQuestions.length;
+            }
+            
+            // 计算非选择题进度
+            if (currentNonChoiceQuestions.length > 0) {
+                answeredCount += userNonChoiceAnswers.filter(answer => answer && answer.trim() !== '').length;
+                totalCount += currentNonChoiceQuestions.length;
+            }
+            
+            const progress = totalCount > 0 ? (answeredCount / totalCount) * 100 : 0;
             document.getElementById('progress').style.width = `${progress}%`;
         }
 
         // 更新题目计数器
         function updateQuestionCounter() {
-            document.getElementById('questionCounter').textContent = 
-                `${currentQuestionIndex + 1}/${currentQuestions.length}`;
+            const current = currentQuestionIndex + 1;
+            const total = currentQuestionType === 'choice' ? currentQuestions.length : currentNonChoiceQuestions.length;
+            document.getElementById('questionCounter').textContent = `${current}/${total}`;
         }
 
         // 更新导航按钮状态
         function updateNavigation() {
+            const total = currentQuestionType === 'choice' ? currentQuestions.length : currentNonChoiceQuestions.length;
             document.getElementById('prevBtn').disabled = currentQuestionIndex === 0;
-            document.getElementById('nextBtn').disabled = currentQuestionIndex === currentQuestions.length - 1;
+            document.getElementById('nextBtn').disabled = currentQuestionIndex === total - 1;
         }
 
         // 导航题目
         function navigateQuestion(direction) {
+            const prefix = currentQuestionType === 'choice' ? 'question' : 'nonChoiceQuestion';
+            
             // 隐藏当前题目
-            document.getElementById(`question${currentQuestionIndex}`).style.display = 'none';
+            document.getElementById(`${prefix}${currentQuestionIndex}`).style.display = 'none';
             
             // 更新索引
             currentQuestionIndex += direction;
             
             // 显示新题目
-            document.getElementById(`question${currentQuestionIndex}`).style.display = 'block';
+            document.getElementById(`${prefix}${currentQuestionIndex}`).style.display = 'block';
             
             updateNavigation();
             updateQuestionCounter();
             
             // 滚动到题目顶部
             document.getElementById('quizInterface').scrollIntoView({ behavior: 'smooth' });
+        }
+        
+        // 切换题型
+        function switchQuestionType(type) {
+            if (currentQuestionType === type) return;
+            
+            currentQuestionType = type;
+            currentQuestionIndex = 0;
+            
+            // 更新标签按钮样式
+            document.getElementById('choiceTab').classList.toggle('active', type === 'choice');
+            document.getElementById('nonChoiceTab').classList.toggle('active', type === 'nonChoice');
+            
+            // 更新标题
+            document.getElementById('currentTypeTitle').textContent = 
+                type === 'choice' ? '选择题部分' : '非选择题部分';
+            
+            // 重新显示题目
+            displayQuestions();
+        }
+        
+        // 保存非选择题答案
+        function saveNonChoiceAnswer(index, answer) {
+            userNonChoiceAnswers[index] = answer;
+            updateProgress();
+        }
+        
+        // 切换参考答案显示
+        function toggleReferenceAnswer(index) {
+            const refAnswer = document.getElementById(`refAnswer${index}`);
+            const btn = event.target;
+            
+            if (refAnswer.style.display === 'none' || !refAnswer.style.display) {
+                refAnswer.style.display = 'block';
+                btn.innerHTML = '<i class="fas fa-eye-slash"></i> 隐藏参考答案';
+            } else {
+                refAnswer.style.display = 'none';
+                btn.innerHTML = '<i class="fas fa-eye"></i> 查看参考答案';
+            }
         }
 
         // 开始测验
@@ -2014,8 +2349,12 @@
                 return;
             }
             
-            // 生成主题列表
-            const topics = [...new Set(allQuestions.map(q => q.topic))];
+            // 生成主题列表（合并选择题和非选择题的主题）
+            const allTopics = [
+                ...allQuestions.map(q => q.topic),
+                ...allNonChoiceQuestions.map(q => q.topic)
+            ];
+            const topics = [...new Set(allTopics)];
             const topicCheckboxes = document.getElementById('topicCheckboxes');
             topicCheckboxes.innerHTML = '';
             
@@ -2058,14 +2397,16 @@
         function startReview() {
             const reviewType = document.getElementById('reviewType').value;
             let filteredQuestions = [];
+            let filteredNonChoice = [];
             
             switch (reviewType) {
                 case 'all':
                     filteredQuestions = [...allQuestions];
+                    filteredNonChoice = [...allNonChoiceQuestions];
                     break;
                     
                 case 'wrong':
-                    // 获取最近一次的错题
+                    // 获取最近一次的错题（仅选择题有错题本功能）
                     if (quizHistory.length > 0) {
                         const lastQuiz = quizHistory[quizHistory.length - 1];
                         const wrongIds = lastQuiz.wrongQuestions.map(q => q.id);
@@ -2090,13 +2431,19 @@
                     filteredQuestions = allQuestions.filter(q => 
                         selectedTopics.includes(q.topic)
                     );
+                    filteredNonChoice = allNonChoiceQuestions.filter(q => 
+                        selectedTopics.includes(q.topic)
+                    );
                     break;
                     
                 case 'unmastered':
                     filteredQuestions = allQuestions.filter(q => 
                         !masteredQuestions.has(q.id)
                     );
-                    if (filteredQuestions.length === 0) {
+                    filteredNonChoice = allNonChoiceQuestions.filter(q => 
+                        !masteredQuestions.has(q.id)
+                    );
+                    if (filteredQuestions.length === 0 && filteredNonChoice.length === 0) {
                         showToast('所有题目都已掌握！', 'success');
                         return;
                     }
@@ -2104,19 +2451,38 @@
                     
                 case 'random':
                     const count = parseInt(document.getElementById('randomNumber').value);
-                    const shuffled = [...allQuestions].sort(() => Math.random() - 0.5);
-                    filteredQuestions = shuffled.slice(0, Math.min(count, shuffled.length));
+                    const allCombined = [...allQuestions, ...allNonChoiceQuestions];
+                    const shuffled = allCombined.sort(() => Math.random() - 0.5);
+                    const selected = shuffled.slice(0, Math.min(count, shuffled.length));
+                    
+                    // 分离选择题和非选择题
+                    filteredQuestions = selected.filter(q => q.type !== 'nonChoice');
+                    filteredNonChoice = selected.filter(q => q.type === 'nonChoice');
                     break;
             }
             
-            if (filteredQuestions.length === 0) {
+            if (filteredQuestions.length === 0 && filteredNonChoice.length === 0) {
                 showToast('没有符合条件的题目', 'error');
                 return;
             }
             
             currentQuestions = filteredQuestions;
+            currentNonChoiceQuestions = filteredNonChoice;
             userAnswers = new Array(currentQuestions.length).fill(null);
+            userNonChoiceAnswers = new Array(currentNonChoiceQuestions.length).fill('');
             reviewMode = 'review';
+            currentQuestionType = 'choice';
+            
+            // 更新题型标签计数
+            document.getElementById('choiceCount').textContent = currentQuestions.length;
+            document.getElementById('nonChoiceCount').textContent = currentNonChoiceQuestions.length;
+            
+            // 如果没有选择题，默认显示非选择题
+            if (currentQuestions.length === 0 && currentNonChoiceQuestions.length > 0) {
+                currentQuestionType = 'nonChoice';
+                document.getElementById('choiceTab').classList.remove('active');
+                document.getElementById('nonChoiceTab').classList.add('active');
+            }
             
             closeReviewModal();
             displayQuestions();
@@ -2124,7 +2490,8 @@
             document.getElementById('quizModeTitle').textContent = '复习模式';
             
             startQuiz();
-            showToast(`开始复习 ${currentQuestions.length} 道题目`);
+            const totalCount = currentQuestions.length + currentNonChoiceQuestions.length;
+            showToast(`开始复习 ${totalCount} 道题目`);
             
             setTimeout(() => {
                 document.getElementById('quizInterface').scrollIntoView({ behavior: 'smooth' });
@@ -2172,10 +2539,13 @@
         // 重置测验
         function resetQuiz() {
             currentQuestions = [];
+            currentNonChoiceQuestions = [];
             userAnswers = [];
+            userNonChoiceAnswers = [];
             currentQuestionIndex = 0;
             quizStarted = false;
             reviewMode = 'normal';
+            currentQuestionType = 'choice';
             
             document.getElementById('quizInterface').style.display = 'none';
             document.getElementById('scoreDisplay').style.display = 'none';
